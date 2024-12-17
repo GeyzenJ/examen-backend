@@ -80,6 +80,17 @@ app.get('/api/campingInBeheer/:id', (req, res) => {
                 WHERE User_ID = (?)`, [userId]).then((user) => {
         res.send(user);
     });
+}); 
+
+
+// User toevoegen
+app.post('/api/user', (req, res) => {
+    const { Admin, Name, First_Name, Mail, Password } = req.body;
+    const db = new Database();
+    db.getQuery(`INSERT INTO users (Admin, Name, First_Name, Mail, Password) 
+                VALUES (?, ?, ?, ?, ?)`, [Admin, Name, First_Name, Mail, Password])
+                .then(() => res.status(201).send({message: 'Added user!'}))
+                .catch((error) => res.status(500).send({error: 'Failed to add user', details: error}));
 });
 
 //Start server
