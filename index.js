@@ -4,6 +4,9 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const Database = require('./classes/database.js');
 
+const cookieParser = require('cookie-parser'); //om cookie te kunnen gebruiken
+
+
 // Aanmaken van een express app
 const app = express();
 
@@ -16,8 +19,8 @@ app.use(cors({
 
 // Middleware om JSON-requests te parsen
 app.use(bodyParser.json());
-
-
+//om cookies te gebruiken
+app.use(cookieParser());
 //Endpoints
 //app.get -> opvragen
 //app.post -> doorgeven (ook update? bv. ww)
@@ -72,9 +75,14 @@ app.get('/api/boekingenCamping/:idU/:idC', (req, res) => {
 });
 
 // Campings in beheer
-app.get('/api/campingInBeheer/:id', (req, res) => {
+app.get('/api/campingInBeheer', async (req, res) => {
     const db = new Database();
-    const userId = req.params.id;
+    //niet via cookie
+    // app.get('/api/campingInBeheer/:id', (req, res) => {
+    //const userId = req.params.id;
+
+    //Wel via cookie
+    const userId = req.cookies.userId;
     db.getQuery(`SELECT *
                 FROM campings
                 WHERE User_ID = (?)`, [userId]).then((user) => {
@@ -92,6 +100,47 @@ app.post('/api/user', (req, res) => {
                 .then(() => res.status(201).send({message: 'Added user!'}))
                 .catch((error) => res.status(500).send({error: 'Failed to add user', details: error}));
 });
+
+// Login
+app.post('/api/login', async (req, res) => {
+    const { mail, password } = req.body;
+
+    console.log('login attempt: ', mail, password);
+    
+    const db = new Database();
+    
+    try {
+        const results = await db.getQuery('SELECT * FROM users WHERE mail = ?', [mail]);
+        console.log('Query results:', results);
+        
+        if (results.length === 0) {
+            console.log('User not found');
+            return res.status(404).send('Gebruiker niet gevonden');
+        }
+
+        const gebruiker = results[0];
+        if (password !== gebruiker.Password) {
+            console.log('Invalid password');
+            return res.status(401).send('Ongeldig wachtwoord');
+        }
+
+        res.cookie('userId', gebruiker.ID, { httpOnly: true, secure: false });
+        
+        console.log('Login successful, user ID:', gebruiker.ID);
+        res.status(200).send('Login succesvol');
+    } catch (error) {
+        console.error('Database error:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+//log uit
+app.get('/api/logout', (req, res) => {
+    req.session.destroy(err => {
+      if (err) return res.status(500).send('Server error');
+      res.status(200).send('Logout successful');
+    });
+  });
 
 //Start server
 app.listen(3000, () => {
