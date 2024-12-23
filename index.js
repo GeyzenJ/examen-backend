@@ -49,6 +49,7 @@ app.get('/api/campings', (req, res) => {
 app.get('/api/user/:id', (req, res) => {
     const db = new Database();
     const userId = req.params.id;
+    console.log('Gegevens ophalen van ', userId);
     db.getQuery('SELECT * FROM users WHERE ID = (?)', [userId]).then((user) => {
         res.send(user);
     });
@@ -151,25 +152,23 @@ app.post('/api/logout', (req, res) => {
 
 
 // Update user
-app.put('/api/user/:id', (req, res) => {
+app.put('/api/user/:id', async (req, res) => {
     const db = new Database();
     const userId = req.cookies.userId;
     const { Name, First_Name, Mail } = req.body;
 
     console.log('Updating user:', {userId, Name, First_Name, Mail});
 
-    // Validate input
-    if (!Name || !First_Name || !Mail) {
-        return res.status(400).send({ error: 'All fields are required' });
+    try {
+        await db.getQuery(`UPDATE users SET Name = ?, First_Name = ?, Mail = ? WHERE id = ?`,
+        [Name, First_Name, Mail, userId]);
+    
+        res.status(200).json({ message: 'User updated successfully!' });
+    } catch (error)
+    {
+        Console.log('Error update user');
+        res.status(500).send('Server error');
     }
-
-    db.getQuery(`UPDATE users SET Name = ?, First_Name = ?, Mail = ? WHERE id = ?`,
-            [Name, First_Name, Mail, userId], (err) => {
-        if (err) {
-            return res.status(500).send({ error: 'Failed to update user', details: err });
-        }
-        res.status(200).send({ message: 'User updated successfully!' });
-    });
 });
 
 
