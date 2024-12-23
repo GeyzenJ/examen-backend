@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const Database = require('./classes/database.js');
 
 const cookieParser = require('cookie-parser'); //om cookie te kunnen gebruiken
+const { Cookie } = require('express-session');
 
 
 // Aanmaken van een express app
@@ -15,12 +16,19 @@ app.use(cors({
     origin: 'http://localhost:8080', // Allow requests from this origin
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
     allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+    credentials: true // Allow credentials (cookies)
 }));
+app.use((req, res, next) => {
+    res.header('Acces-Control-Allow-Credentials', 'true');
+    next();
+});
+
 
 // Middleware om JSON-requests te parsen
 app.use(bodyParser.json());
 //om cookies te gebruiken
 app.use(cookieParser());
+
 //Endpoints
 //app.get -> opvragen
 //app.post -> doorgeven (ook update? bv. ww)
@@ -124,10 +132,9 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).send('Ongeldig wachtwoord');
         }
 
-        res.cookie('userId', gebruiker.ID, { httpOnly: true, secure: false });
-        
+        res.cookie('userId', gebruiker.ID, { httpOnly: false, secure: false });        
         console.log('Login successful, user ID:', gebruiker.ID);
-        res.status(200).send('Login succesvol');
+        res.status(200).json({message: 'Login succesvol'});
     } catch (error) {
         console.error('Database error:', error);
         res.status(500).send('Server error');
@@ -135,12 +142,36 @@ app.post('/api/login', async (req, res) => {
 });
 
 //log uit
-app.get('/api/logout', (req, res) => {
-    req.session.destroy(err => {
-      if (err) return res.status(500).send('Server error');
-      res.status(200).send('Logout successful');
+app.post('/api/logout', (req, res) => {
+    res.clearCookie('userId', { httpOnly: false, secure: false});
+    console.log('Logout succesvol!');
+    res.status(200).send('Logout successful');
+});
+
+
+
+// Update user
+app.put('/api/user/:id', (req, res) => {
+    const db = new Database();
+    const userId = req.cookies.userId;
+    const { Name, First_Name, Mail } = req.body;
+
+    console.log('Updating user:', {userId, Name, First_Name, Mail});
+
+    // Validate input
+    if (!Name || !First_Name || !Mail) {
+        return res.status(400).send({ error: 'All fields are required' });
+    }
+
+    db.getQuery(`UPDATE users SET Name = ?, First_Name = ?, Mail = ? WHERE id = ?`,
+            [Name, First_Name, Mail, userId], (err) => {
+        if (err) {
+            return res.status(500).send({ error: 'Failed to update user', details: err });
+        }
+        res.status(200).send({ message: 'User updated successfully!' });
     });
-  });
+});
+
 
 //Start server
 app.listen(3000, () => {
