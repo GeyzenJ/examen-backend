@@ -149,8 +149,6 @@ app.post('/api/logout', (req, res) => {
     res.status(200).send('Logout successful');
 });
 
-
-
 // Update user
 app.put('/api/user/:id', async (req, res) => {
     const db = new Database();
