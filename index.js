@@ -63,7 +63,8 @@ app.get('/api/boekingenUser/:id', (req, res) => {
                 FROM users as u
                 INNER JOIN boekingen as b ON u.ID = b.User_ID
                 INNER JOIN campings as c on b.Camping_ID = c.ID
-                WHERE u.ID = (?)`, [userId]).then((user) => {
+                WHERE u.ID = (?)
+                ORDER BY b.Eind_Datum`, [userId]).then((user) => {
         res.send(user);
     });
 });
@@ -133,7 +134,9 @@ app.post('/api/login', async (req, res) => {
             return res.status(401).send('Ongeldig wachtwoord');
         }
 
-        res.cookie('userId', gebruiker.ID, { httpOnly: false, secure: false });        
+        res.cookie('userId', gebruiker.ID, { httpOnly: false, secure: false });   
+        res.cookie('isAdmin', gebruiker.Admin, {httpOnly: false, secure: false});
+             
         console.log('Login successful, user ID:', gebruiker.ID);
         res.status(200).json({message: 'Login succesvol'});
     } catch (error) {
@@ -145,6 +148,7 @@ app.post('/api/login', async (req, res) => {
 //log uit
 app.post('/api/logout', (req, res) => {
     res.clearCookie('userId', { httpOnly: false, secure: false});
+    res.clearCookie('isAdmin', {httpOnly: false, secure: false});
     console.log('Logout succesvol!');
     res.status(200).send('Logout successful');
 });
@@ -169,6 +173,53 @@ app.put('/api/user/:id', async (req, res) => {
     }
 });
 
+//Booking systeem
+//beschikbaarheid camping
+async function checkAvailability(db, campingId, startDatum, eindDatum, electriciteit) {
+    const column = electriciteit ? 'Plaats_Electriciteit' : 'Plaats_Zonder_Electriciteit';
+    const query = `
+        SELECT COUNT(*) as count 
+        FROM boekingen 
+        WHERE Camping_ID = ? 
+        AND Electriciteit = ? 
+        AND ((Start_Datum <= ? AND Eind_Datum >= ?) 
+        OR (Start_Datum <= ? AND Eind_Datum >= ?))
+    `;
+    const result = await db.getQuery(query, [campingId, electriciteit, startDatum, startDatum, eindDatum, eindDatum]);
+    const bookedCount = result[0].count;
+
+    const spotsQuery = `SELECT ${column} as spots FROM campings WHERE ID = ?`;
+    const spotsResult = await db.getQuery(spotsQuery, [campingId]);
+    const totalSpots = spotsResult[0].spots;
+
+    return bookedCount < totalSpots;
+}
+//Plaats boeken
+app.post('/api/book', async (req, res) => {
+    const db = new Database();
+    const { userId, campingId, startDatum, eindDatum, electriciteit } = req.body;
+
+    const vandaag = new Date().toISOString().split('T')[0];
+    if (startDatum < vandaag) {
+        return res.status(400).json({ message: 'Begin kan niet in het verleden liggen.' });
+    }
+
+    try {
+        // Check availability
+        const isAvailable = await checkAvailability(db, campingId, startDatum, eindDatum, electriciteit);
+        if (!isAvailable) {
+            return res.status(400).json({ message: 'Camping spot not available for the selected dates' });
+        }
+
+        // Create booking
+        await db.getQuery(`INSERT INTO boekingen (User_ID, Camping_ID, Start_Datum, Eind_Datum, Electriciteit) 
+                           VALUES (?, ?, ?, ?, ?)`, [userId, campingId, startDatum, eindDatum, electriciteit]);
+        res.status(201).json({ message: 'Booking created successfully!' });
+    } catch (error) {
+        console.error('Error creating booking:', error);
+        res.status(500).send('Server error');
+    }
+});
 
 //Start server
 app.listen(3000, () => {
