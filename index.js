@@ -69,7 +69,7 @@ app.get('/api/boekingenUser/:id', (req, res) => {
     });
 });
 
-// Boekingen camping
+// Boekingen per camping
 app.get('/api/boekingenCamping/:idU/:idC', (req, res) => {
     const db = new Database();
     const userId = req.params.idU;
@@ -85,14 +85,10 @@ app.get('/api/boekingenCamping/:idU/:idC', (req, res) => {
 });
 
 // Campings in beheer
-app.get('/api/campingInBeheer', async (req, res) => {
-    const db = new Database();
-    //niet via cookie
-    // app.get('/api/campingInBeheer/:id', (req, res) => {
-    //const userId = req.params.id;
+app.get('/api/campingInBeheer/:id', async (req, res) => {
+    const db = new Database();  
+    const userId = req.params.id;
 
-    //Wel via cookie
-    const userId = req.cookies.userId;
     db.getQuery(`SELECT *
                 FROM campings
                 WHERE User_ID = (?)`, [userId]).then((user) => {
@@ -136,7 +132,7 @@ app.post('/api/login', async (req, res) => {
 
         res.cookie('userId', gebruiker.ID, { httpOnly: false, secure: false });   
         res.cookie('isAdmin', gebruiker.Admin, {httpOnly: false, secure: false});
-             
+
         console.log('Login successful, user ID:', gebruiker.ID);
         res.status(200).json({message: 'Login succesvol'});
     } catch (error) {
@@ -172,6 +168,34 @@ app.put('/api/user/:id', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
+// Update camping
+app.put('/api/camping/:id', async (req, res) => {
+    const db = new Database();
+    const {CampingId, Naam, Plaats_Electriciteit, Plaats_Zonder_Electriciteit,
+        Zwembad, Speeltuin, Animatie, Straatnaam, Huisnummer, Postcode, Gemeente,
+        Land, Bescrijving } = req.body;
+    const userId = req.cookies.userId;
+
+    console.log('Updating Camping:', {CampingId, Naam});
+
+    try {
+        await db.getQuery(`UPDATE campings 
+            SET Naam = ?, Plaats_Electriciteit = ?, Plaats_Zonder_Electriciteit = ?,
+        Zwembad = ?, Speeltuin = ?, Animatie = ?, Straatnaam = ?, Huisnummer = ?, Postcode = ?, Gemeente = ?,
+        Land = ?, Bescrijving = ?`,
+        [Naam, Plaats_Electriciteit, Plaats_Zonder_Electriciteit,
+            Zwembad, Speeltuin, Animatie, Straatnaam, Huisnummer, Postcode, Gemeente,
+            Land, Bescrijving, userId]);
+    
+        res.status(200).json({ message: 'Camping updated successfully!' });
+    } catch (error)
+    {
+        Console.log('Error update user');
+        res.status(500).send('Server error');
+    }
+});
+
 
 //Booking systeem
 //beschikbaarheid camping
