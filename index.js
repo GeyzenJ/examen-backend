@@ -108,6 +108,22 @@ app.get('/api/boekingenCamping/:idU/:idC', (req, res) => {
     });
 });
 
+// Camping toevoegen
+app.post('/api/camping', (req, res) => {
+    const { Naam, Plaats_Electriciteit, Plaats_Zonder_Electriciteit, Zwembad, Speeltuin, Animatie,
+        Straatnaam, Huisnummer, Postcode, Gemeente, Land, Bescrijving, User_ID } = req.body;
+    const db = new Database();
+
+    console.log(`userid ${User_ID} voegt camping ${Naam} toe`);
+
+    db.getQuery(`INSERT INTO campings (Naam, Plaats_Electriciteit, Plaats_Zonder_Electriciteit, Zwembad, Speeltuin, Animatie,
+        Straatnaam, Huisnummer, Postcode, Gemeente, Land, Bescrijving, User_ID)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [ Naam, Plaats_Electriciteit,
+            Plaats_Zonder_Electriciteit, Zwembad, Speeltuin, Animatie,
+            Straatnaam, Huisnummer, Postcode, Gemeente, Land, Bescrijving, User_ID])
+        .then(() => res.status(201).send({message: 'Added toegevoegd!'}))
+        .catch((error) => res.status(500).send({error: 'Failed to add camping', details: error}));
+});
 
 // User toevoegen
 app.post('/api/user', (req, res) => {
