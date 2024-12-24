@@ -108,6 +108,44 @@ app.get('/api/boekingenCamping/:idU/:idC', (req, res) => {
     });
 });
 
+
+// Overzicht campings met filtering en zoeken
+app.post('/api/campings', (req, res) => {
+    const db = new Database();
+    const { animatie, zwembad, speeltuin, land, gemeente } = req.body;
+
+    let query = 'SELECT * FROM campings WHERE 1=1';
+    const params = [];
+
+    if (animatie) {
+        query += ' AND Animatie = ?';
+        params.push(animatie);
+    }
+    if (zwembad) {
+        query += ' AND Zwembad = ?';
+        params.push(zwembad);
+    }
+    if (speeltuin) {
+        query += ' AND Speeltuin = ?';
+        params.push(speeltuin);
+    }
+    if (land) {
+        query += ' AND Land LIKE ?';
+        params.push(`%${land}%`);
+    }
+    if (gemeente) {
+        query += ' AND Gemeente LIKE ?';
+        params.push(`%${gemeente}%`);
+    }
+
+    db.getQuery(query, params).then((campings) => {
+        res.send(campings);
+    }).catch((error) => {
+        console.error('Error fetching campings:', error);
+        res.status(500).send('Server error');
+    });
+});
+
 // Camping toevoegen
 app.post('/api/camping', (req, res) => {
     const { Naam, Plaats_Electriciteit, Plaats_Zonder_Electriciteit, Zwembad, Speeltuin, Animatie,
