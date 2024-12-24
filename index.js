@@ -45,6 +45,30 @@ app.get('/api/campings', (req, res) => {
     });
 });
 
+// Gegevens camping
+app.get('/api/camping/:id', (req, res) => {
+    const db = new Database();
+    const campingId = req.params.id;
+    const userId = req.cookies.userId;
+    db.getQuery(`SELECT * FROM campings 
+                WHERE ID = ? 
+                AND User_ID = ?`, [campingId, userId]).then((camping) => {
+        res.send(camping[0]);
+    });
+});
+
+// Campings in beheer
+app.get('/api/campingInBeheer/', async (req, res) => {
+    const db = new Database();  
+    const userId = req.cookies.userId;
+    db.getQuery(`SELECT *
+                FROM campings
+                WHERE User_ID = (?)`, [userId]).then((user) => {
+        res.send(user);
+    });
+}); 
+
+
 // Gegevens gebruiker
 app.get('/api/user/:id', (req, res) => {
     const db = new Database();
@@ -83,18 +107,6 @@ app.get('/api/boekingenCamping/:idU/:idC', (req, res) => {
         res.send(user);
     });
 });
-
-// Campings in beheer
-app.get('/api/campingInBeheer/:id', async (req, res) => {
-    const db = new Database();  
-    const userId = req.params.id;
-
-    db.getQuery(`SELECT *
-                FROM campings
-                WHERE User_ID = (?)`, [userId]).then((user) => {
-        res.send(user);
-    });
-}); 
 
 
 // User toevoegen
@@ -164,7 +176,7 @@ app.put('/api/user/:id', async (req, res) => {
         res.status(200).json({ message: 'User updated successfully!' });
     } catch (error)
     {
-        Console.log('Error update user');
+        console.log('Error update user');
         res.status(500).send('Server error');
     }
 });
@@ -172,26 +184,26 @@ app.put('/api/user/:id', async (req, res) => {
 // Update camping
 app.put('/api/camping/:id', async (req, res) => {
     const db = new Database();
-    const {CampingId, Naam, Plaats_Electriciteit, Plaats_Zonder_Electriciteit,
+    const {Naam, Plaats_Electriciteit, Plaats_Zonder_Electriciteit,
         Zwembad, Speeltuin, Animatie, Straatnaam, Huisnummer, Postcode, Gemeente,
         Land, Bescrijving } = req.body;
-    const userId = req.cookies.userId;
-
+    
+    const CampingId = req.params.id;
     console.log('Updating Camping:', {CampingId, Naam});
 
     try {
         await db.getQuery(`UPDATE campings 
             SET Naam = ?, Plaats_Electriciteit = ?, Plaats_Zonder_Electriciteit = ?,
         Zwembad = ?, Speeltuin = ?, Animatie = ?, Straatnaam = ?, Huisnummer = ?, Postcode = ?, Gemeente = ?,
-        Land = ?, Bescrijving = ?`,
+        Land = ?, Bescrijving = ? WHERE ID = ?`,
         [Naam, Plaats_Electriciteit, Plaats_Zonder_Electriciteit,
             Zwembad, Speeltuin, Animatie, Straatnaam, Huisnummer, Postcode, Gemeente,
-            Land, Bescrijving, userId]);
+            Land, Bescrijving, CampingId]);
     
         res.status(200).json({ message: 'Camping updated successfully!' });
     } catch (error)
     {
-        Console.log('Error update user');
+        console.log('Error update camping');
         res.status(500).send('Server error');
     }
 });
