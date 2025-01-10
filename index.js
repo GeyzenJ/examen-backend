@@ -73,7 +73,7 @@ app.get('/api/campingInBeheer/', async (req, res) => {
 app.get('/api/user/:id', (req, res) => {
     const db = new Database();
     const userId = req.params.id;
-    console.log('Gegevens ophalen van ', userId);
+   // console.log('Gegevens ophalen van ', userId);
     db.getQuery('SELECT * FROM users WHERE ID = (?)', [userId]).then((user) => {
         res.send(user);
     });
@@ -183,23 +183,23 @@ app.post('/api/login', async (req, res) => {
     
     try {
         const results = await db.getQuery('SELECT * FROM users WHERE mail = ?', [mail]);
-        console.log('Query results:', results);
+        // console.log('Query results:', results);
         
         if (results.length === 0) {
-            console.log('User not found');
+            // console.log('User not found');
             return res.status(404).send('Gebruiker niet gevonden');
         }
 
         const gebruiker = results[0];
         if (password !== gebruiker.Password) {
-            console.log('Invalid password');
+            // console.log('Invalid password');
             return res.status(401).send('Ongeldig wachtwoord');
         }
 
         res.cookie('userId', gebruiker.ID, { httpOnly: false, secure: false });   
         res.cookie('isAdmin', gebruiker.Admin, {httpOnly: false, secure: false});
 
-        console.log('Login successful, user ID:', gebruiker.ID);
+        // console.log('Login successful, user ID:', gebruiker.ID);
         res.status(200).json({message: 'Login succesvol'});
     } catch (error) {
         console.error('Database error:', error);
@@ -211,7 +211,7 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/logout', (req, res) => {
     res.clearCookie('userId', { httpOnly: false, secure: false});
     res.clearCookie('isAdmin', {httpOnly: false, secure: false});
-    console.log('Logout succesvol!');
+    // console.log('Logout succesvol!');
     res.status(200).send('Logout successful');
 });
 
@@ -221,7 +221,7 @@ app.put('/api/user/:id', async (req, res) => {
     const userId = req.cookies.userId;
     const { Name, First_Name, Mail } = req.body;
 
-    console.log('Updating user:', {userId, Name, First_Name, Mail});
+    // console.log('Updating user:', {userId, Name, First_Name, Mail});
 
     try {
         await db.getQuery(`UPDATE users SET Name = ?, First_Name = ?, Mail = ? WHERE id = ?`,
@@ -230,7 +230,7 @@ app.put('/api/user/:id', async (req, res) => {
         res.status(200).json({ message: 'User updated successfully!' });
     } catch (error)
     {
-        console.log('Error update user');
+        // console.log('Error update user');
         res.status(500).send('Server error');
     }
 });
@@ -243,7 +243,7 @@ app.put('/api/camping/:id', async (req, res) => {
         Land, Bescrijving } = req.body;
     
     const CampingId = req.params.id;
-    console.log('Updating Camping:', {CampingId, Naam});
+    // console.log('Updating Camping:', {CampingId, Naam});
 
     try {
         await db.getQuery(`UPDATE campings 
@@ -257,7 +257,7 @@ app.put('/api/camping/:id', async (req, res) => {
         res.status(200).json({ message: 'Camping updated successfully!' });
     } catch (error)
     {
-        console.log('Error update camping');
+        // console.log('Error update camping');
         res.status(500).send('Server error');
     }
 });
