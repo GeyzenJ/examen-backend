@@ -152,7 +152,7 @@ app.post('/api/camping', (req, res) => {
         Straatnaam, Huisnummer, Postcode, Gemeente, Land, Bescrijving, User_ID } = req.body;
     const db = new Database();
 
-    console.log(`userid ${User_ID} voegt camping ${Naam} toe`);
+   // console.log(`userid ${User_ID} voegt camping ${Naam} toe`);
 
     db.getQuery(`INSERT INTO campings (Naam, Plaats_Electriciteit, Plaats_Zonder_Electriciteit, Zwembad, Speeltuin, Animatie,
         Straatnaam, Huisnummer, Postcode, Gemeente, Land, Bescrijving, User_ID)
@@ -177,7 +177,7 @@ app.post('/api/user', (req, res) => {
 app.post('/api/login', async (req, res) => {
     const { mail, password } = req.body;
 
-    console.log('login attempt: ', mail, password);
+    //console.log('login attempt: ', mail);
     
     const db = new Database();
     
